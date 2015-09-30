@@ -100,23 +100,6 @@ func (a *Agent) serverConfig() (*nomad.Config, error) {
 		conf.EnabledSchedulers = a.config.Server.EnabledSchedulers
 	}
 
-	// Set up the advertise addrs
-	if addr := a.config.AdvertiseAddrs.Serf; addr != "" {
-		serfAddr, err := net.ResolveTCPAddr("tcp", addr)
-		if err != nil {
-			return nil, fmt.Errorf("error resolving serf advertise address: %s", err)
-		}
-		conf.SerfConfig.MemberlistConfig.AdvertiseAddr = serfAddr.IP.String()
-		conf.SerfConfig.MemberlistConfig.AdvertisePort = serfAddr.Port
-	}
-	if addr := a.config.AdvertiseAddrs.RPC; addr != "" {
-		rpcAddr, err := net.ResolveTCPAddr("tcp", addr)
-		if err != nil {
-			return nil, fmt.Errorf("error resolving rpc advertise address: %s", err)
-		}
-		conf.RPCAdvertise = rpcAddr
-	}
-
 	// Set up the bind addresses
 	if addr := a.config.BindAddr; addr != "" {
 		conf.RPCAddr.IP = net.ParseIP(addr)
@@ -135,6 +118,26 @@ func (a *Agent) serverConfig() (*nomad.Config, error) {
 	}
 	if port := a.config.Ports.Serf; port != 0 {
 		conf.SerfConfig.MemberlistConfig.BindPort = port
+	}
+
+	// Set up the advertise addrs
+	if addr := a.config.AdvertiseAddrs.Serf; addr != "" {
+		serfAddr, err := net.ResolveTCPAddr("tcp", addr)
+		if err != nil {
+			return nil, fmt.Errorf("error resolving serf advertise address: %s", err)
+		}
+		conf.SerfConfig.MemberlistConfig.AdvertiseAddr = serfAddr.IP.String()
+		conf.SerfConfig.MemberlistConfig.AdvertisePort = serfAddr.Port
+		conf.SerfConfig.MemberlistConfig.BindAddr = serfAddr.IP.String()
+		conf.SerfConfig.MemberlistConfig.BindPort = serfAddr.Port
+	}
+	if addr := a.config.AdvertiseAddrs.RPC; addr != "" {
+		rpcAddr, err := net.ResolveTCPAddr("tcp", addr)
+		if err != nil {
+			return nil, fmt.Errorf("error resolving rpc advertise address: %s", err)
+		}
+		conf.RPCAdvertise = rpcAddr
+		conf.RPCAddr = rpcAddr
 	}
 
 	return conf, nil
